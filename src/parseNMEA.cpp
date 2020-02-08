@@ -1,13 +1,15 @@
 #include "earth.h"
 #include "parseNMEA.h"
 
+#include <regex>
+
 namespace NMEA
 {
 
-  bool isWellFormedSentence(std::string)
+  bool isWellFormedSentence(std::string sentence)
   {
-      // Stub definition, needs implementing
-      return false;
+      std::regex sentence_pattern("^\\$GP([A-Z]{3})((?:,[^,\\*$]*)*)\\*([0-9a-fA-F]{2})");
+      return std::regex_match(sentence, sentence_pattern);
   }
 
   bool hasValidChecksum(std::string)
