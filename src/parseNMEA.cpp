@@ -6,6 +6,8 @@
 #include <numeric>
 #include <functional>
 
+#include <iostream>
+
 namespace NMEA
 {
 
@@ -27,10 +29,27 @@ namespace NMEA
       return parity == checksum;
   }
 
-  SentenceData extractSentenceData(std::string)
+  SentenceData extractSentenceData(std::string sentence)
   {
-      // Stub definition, needs implementing
-      return {"",{}};
+      std::regex sentence_data_pattern("GP(.{3})(.*)\\*");
+      std::smatch matches;
+      std::regex_search(sentence, matches, sentence_data_pattern);
+      std::string format = matches[1];
+      std::string data = matches[2];
+      std::vector<std::string> fields = {};
+      std::istringstream stringstream(data);
+      std::string token;
+
+      while(std::getline(stringstream, token, ','))
+          fields.push_back(token);
+
+      if (data.back() == ',')
+          fields.push_back("");
+
+      if (fields.size() > 0)
+          fields.erase(fields.begin());
+
+      return {format, fields};
   }
 
   GPS::Position positionFromSentenceData(SentenceData)
