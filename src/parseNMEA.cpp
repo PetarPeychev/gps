@@ -18,10 +18,9 @@ namespace NMEA
   bool hasValidChecksum(std::string sentence)
   {
       assert(isWellFormedSentence(sentence));
-
-      std::regex checksum_pattern("^\\$(GP[A-Z]{3}(?:,[^,\\*$]*)*)\\*([0-9a-fA-F]{2})");
+      std::regex checksum_pattern("\\$([^\\*]*)\\*(.*)");
       std::smatch matches;
-      std::regex_match (sentence, matches, checksum_pattern);
+      std::regex_match(sentence, matches, checksum_pattern);
       std::string chars = matches[1];
       int checksum = stoi(matches[2], nullptr, 16);
       int parity = std::accumulate(chars.begin(), chars.end(), 0, std::bit_xor<int>());
