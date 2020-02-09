@@ -87,10 +87,24 @@ namespace NMEA
       else throw std::invalid_argument(data.first + "is an unsupported NMEA sentence data format.");
   }
 
-  Route routeFromLog(std::istream &)
+  Route routeFromLog(std::istream &istream)
   {
-      // Stub definition, needs implementing
-      return {};
+      Route route;
+      std::string sentence;
+      while(std::getline(istream, sentence)) {
+          if (isWellFormedSentence(sentence) && hasValidChecksum(sentence)) {
+              try {
+                  SentenceData data = extractSentenceData(sentence);
+                  GPS::Position position = positionFromSentenceData(data);
+                  route.push_back(position);
+              }
+              catch(std::invalid_argument) {
+                /* If the sentence format is not supported or
+                 * does not contain valid data, ignore it. */
+              }
+          }
+      }
+      return route;
   }
 
 }
