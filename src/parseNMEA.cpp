@@ -21,11 +21,13 @@ namespace NMEA
   bool hasValidChecksum(std::string sentence)
   {
       assert(isWellFormedSentence(sentence));
+
       std::smatch matches;
       std::regex_match(sentence, matches, checksumGroups);
       std::string chars = matches[1];
-      int checksum = stoi(matches[2], nullptr, 16);
+      int checksum = std::stoi(matches[2], nullptr, 16);
       int parity = std::accumulate(chars.begin(), chars.end(), 0, std::bit_xor<int>());
+
       return parity == checksum;
   }
 
