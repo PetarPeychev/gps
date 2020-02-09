@@ -6,12 +6,29 @@
 #include <numeric>
 #include <functional>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace NMEA
 {
   const std::regex wellFormedSentence("^\\$GP[A-Z]{3}(?:,[^,\\*$]*)*\\*[0-9a-fA-F]{2}");
   const std::regex checksumGroups("\\$([^\\*]*)\\*(.*)");
   const std::regex dataGroups("GP(.{3})(.*)\\*");
+
+  /* Indices in the data list, which correspond to the position data. */
+  struct PositionFormat {
+      size_t latitude;
+      size_t northing;
+      size_t longtitude;
+      size_t easting;
+      bool containsElevation;
+      size_t elevation;
+  };
+
+  const std::unordered_map<std::string, PositionFormat> SupportedFormats {
+      {"GLL", PositionFormat{0, 1, 2, 3, false, 0}},
+      {"GGA", PositionFormat{1, 2, 3, 4, true, 8}},
+      {"RMC", PositionFormat{2, 3, 4, 5, false, 0}}
+  };
 
   bool isWellFormedSentence(std::string sentence)
   {
@@ -57,39 +74,36 @@ namespace NMEA
       return {format, fields};
   }
 
+  GPS::Position parsePosition(SentenceData data, PositionFormat format)
+  {
+      try {
+          std::string latitude = data.second.at(format.latitude);
+          char northing = data.second.at(format.northing).at(0);
+          std::string longtitude = data.second.at(format.longtitude);
+          char easting = data.second.at(format.easting).at(0);
+          std::string elevation = "0";
+
+          if (format.containsElevation) elevation = data.second.at(format.elevation);
+
+          return GPS::Position(latitude, northing, longtitude, easting, elevation);
+      }
+      catch (std::out_of_range) {
+          throw std::invalid_argument("Necessary data fields missing or containing invalid data,");
+      }
+  }
+
+  bool isSupportedFormat(std::string format)
+  {
+      return (SupportedFormats.find(format) != SupportedFormats.end());
+  }
+
   GPS::Position positionFromSentenceData(SentenceData data)
   {
-      if (data.first == "GLL") {
-          if (data.second.size() == 5) {
-              return GPS::Position(data.second[0],
-                                   data.second[1][0],
-                                   data.second[2],
-                                   data.second[3][0],
-                                   "0");
-          }
-          else throw std::invalid_argument("NMEA Sentence contains " + std::to_string(data.second.size()) + " data fields, expected 5 for GLL format.");
+      std::string format_code = data.first;
+      if (isSupportedFormat(format_code)) {
+          return parsePosition(data, SupportedFormats.at(format_code));
       }
-      else if (data.first == "GGA") {
-          if (data.second.size() == 14) {
-              return GPS::Position(data.second[1],
-                                   data.second[2][0],
-                                   data.second[3],
-                                   data.second[4][0],
-                                   data.second[8]);
-          }
-          else throw std::invalid_argument("NMEA Sentence contains " + std::to_string(data.second.size()) + " data fields, expected 14 for GGA format.");
-      }
-      else if (data.first == "RMC") {
-          if (data.second.size() == 11) {
-              return GPS::Position(data.second[2],
-                                   data.second[3][0],
-                                   data.second[4],
-                                   data.second[5][0],
-                                   "0");
-          }
-          else throw std::invalid_argument("NMEA Sentence contains " + std::to_string(data.second.size()) + " data fields, expected 11 for RMC format.");
-      }
-      else throw std::invalid_argument(data.first + "is an unsupported NMEA sentence data format.");
+      else throw std::invalid_argument(data.first + " is an unsupported NMEA sentence data format.");
   }
 
   Route routeFromLog(std::istream &istream)
@@ -111,5 +125,4 @@ namespace NMEA
       }
       return route;
   }
-
 }
