@@ -9,19 +9,20 @@
 
 namespace NMEA
 {
+  const std::regex wellFormedSentence("^\\$GP[A-Z]{3}(?:,[^,\\*$]*)*\\*[0-9a-fA-F]{2}");
+  const std::regex checksumGroups("\\$([^\\*]*)\\*(.*)");
+  const std::regex dataGroups("GP(.{3})(.*)\\*");
 
   bool isWellFormedSentence(std::string sentence)
   {
-      std::regex well_formed_pattern("^\\$GP[A-Z]{3}(?:,[^,\\*$]*)*\\*[0-9a-fA-F]{2}");
-      return std::regex_match(sentence, well_formed_pattern);
+      return std::regex_match(sentence, wellFormedSentence);
   }
 
   bool hasValidChecksum(std::string sentence)
   {
       assert(isWellFormedSentence(sentence));
-      std::regex checksum_pattern("\\$([^\\*]*)\\*(.*)");
       std::smatch matches;
-      std::regex_match(sentence, matches, checksum_pattern);
+      std::regex_match(sentence, matches, checksumGroups);
       std::string chars = matches[1];
       int checksum = stoi(matches[2], nullptr, 16);
       int parity = std::accumulate(chars.begin(), chars.end(), 0, std::bit_xor<int>());
@@ -31,9 +32,8 @@ namespace NMEA
   SentenceData extractSentenceData(std::string sentence)
   {
       assert(isWellFormedSentence(sentence));
-      std::regex sentence_data_pattern("GP(.{3})(.*)\\*");
       std::smatch matches;
-      std::regex_search(sentence, matches, sentence_data_pattern);
+      std::regex_search(sentence, matches, dataGroups);
       std::string format = matches[1];
       std::string data = matches[2];
       std::vector<std::string> fields = {};
