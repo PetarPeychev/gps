@@ -99,11 +99,11 @@ namespace NMEA
 
   GPS::Position positionFromSentenceData(SentenceData data)
   {
-      std::string format_code = data.first;
-      if (isSupportedFormat(format_code)) {
-          return parsePosition(data, SupportedFormats.at(format_code));
+      std::string formatCode = data.first;
+      if (isSupportedFormat(formatCode)) {
+          return parsePosition(data, SupportedFormats.at(formatCode));
       }
-      else throw std::invalid_argument(data.first + " is an unsupported NMEA sentence data format.");
+      else throw std::invalid_argument(formatCode + " is an unsupported NMEA sentence data format.");
   }
 
   Route routeFromLog(std::istream &istream)
