@@ -34,22 +34,25 @@ namespace NMEA
   SentenceData extractSentenceData(std::string sentence)
   {
       assert(isWellFormedSentence(sentence));
+
       std::smatch matches;
       std::regex_search(sentence, matches, dataGroups);
       std::string format = matches[1];
       std::string data = matches[2];
+      std::istringstream stringStream(data);
       std::vector<std::string> fields = {};
-      std::istringstream stringstream(data);
       std::string token;
 
-      while(std::getline(stringstream, token, ','))
+      while(std::getline(stringStream, token, ','))
           fields.push_back(token);
 
-      if (data.back() == ',')
-          fields.push_back("");
+      /* std::getline skips the last element if empty,
+       * so it must be added manually. */
+      if (data.back() == ',') fields.push_back("");
 
-      if (fields.size() > 0)
-          fields.erase(fields.begin());
+      /* Comma-separated list begins with a leading comma,
+       * which shouldn't be parsed as an empty data field. */
+      if (fields.size() > 0) fields.erase(fields.begin());
 
       return {format, fields};
   }
